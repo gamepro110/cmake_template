@@ -1,0 +1,66 @@
+name: CMake template cross-compile test
+# TODO fix win build
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        compiler: [gcc, clang, msvc]
+        osBase: [linux, windows]
+        include:
+          - os: windows-latest
+            compiler: msvc
+            osBase: windows
+          - os: ubuntu-latest
+            compiler: gcc
+            osBase: linux
+          - os: ubuntu-latest
+            compiler: clang
+            osBase: linux
+        exclude:
+          - os: windows-latest
+            compiler: gcc
+          - os: windows-latest
+            compiler: clang
+          - os: ubuntu-latest
+            compiler: msvc
+          - os: windows-latest
+            osBase: linux
+          - os: ubuntu-latest
+            osBase: windows
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: install required packages
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash
+      run: "sudo apt install ninja-build"
+
+    - name: build preset value
+      run: echo "cmakePreset=${{ matrix.osBase }}-${{ matrix.compiler }}-debug" >> $GITHUB_ENV
+
+    - name: Configure CMake
+      env:
+        cmakePreset: ${{ env.cmakePreset }}
+      run: "cmake --preset=${{ env.cmakePreset }}"
+
+    - name: Build
+      env:
+        cmakePreset: ${{ env.cmakePreset }}
+      run: cmake --build --preset=${{ env.cmakePreset }}
+
+    - name: Test
+      env:
+        cmakePreset: ${{ env.cmakePreset }}
+      run: ctest --preset=${{ env.cmakePreset }}

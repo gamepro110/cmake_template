@@ -22,11 +22,8 @@ else()
     add_compile_options(-O0 -Wall -Werror -Wpedantic)
 
     if (NOT APPLE AND NOT DISABLE_SANITIZERS)
-        add_compile_options(-fsanitize=address,undefined)
-        link_libraries(
-            asan
-            ubsan
-        )
+        add_compile_options(-fsanitize=undefined)
+        link_libraries(ubsan)
     endif (NOT APPLE AND NOT DISABLE_SANITIZERS)
 endif(WIN32)
 

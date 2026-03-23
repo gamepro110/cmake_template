@@ -1,4 +1,5 @@
 stages:          # List of stages for jobs, and their order of execution
+  - analysis
   - build
   - test
   - deploy
@@ -6,28 +7,27 @@ stages:          # List of stages for jobs, and their order of execution
 .build_matrix: &build_matrix
   parallel:
     matrix:
-      - VARIANT: ["debug", "release", "dist"]
-        COMPILER: ["clang", "gcc"]
+      - COMPILER: ["clang", "gcc"]
+        VARIANT: ["debug", "release", "dist"]
+
+static-analysis-job:
+  stage: analysis
+  script:
+    - cppcheck app lib tests
+    # add clang-tidy
 
 build-job:       # This job runs in the build stage, which runs first.
   stage: build
   script:
-    - echo "--- configuring $COMPILER-$VARIANT ---"
     - cmake --preset=linux-$COMPILER-$VARIANT
-    - echo "--- building ---"
     - cmake --build --preset=linux-$COMPILER-$VARIANT
   <<: *build_matrix
 
-
 unit-test-job:
   stage: test
+  before_script:
+    - cmake --preset=linux-$COMPILER-$VARIANT
+    - cmake --build --preset=linux-$COMPILER-$VARIANT
   script:
-    - echo "--- Running unit tests ---"
     - ctest --preset=linux-$COMPILER-$VARIANT
   <<: *build_matrix
-
-static-analysis-job:
-  stage: test
-  script:
-    - cppcheck app lib tests
-    # add clang-tidy
